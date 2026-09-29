@@ -23,8 +23,9 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "routeros-api": "^1.0.2"
+    "express": "^4.22.3",
+    "routeros-api": "^1.0.2",
+    "routeros-client": "^1.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
