@@ -108,7 +108,7 @@
     <script>
         // ========================================================
         // GANTI URL DI BAWAH DENGAN DOMAIN VERCEL KAMU JIKA SUDAH DEPLOY
-        // Contoh: 'https://nama-proyek-kamu.vercel.app'git rm --cached .env
+        // Contoh: 'https://nama-proyek-kamu.vercel.app'
         // ========================================================
         const BACKEND_URL = window.location.origin.includes('vercel.app') 
             ? window.location.origin 
@@ -155,8 +155,13 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage(data.message, 'success');
+                    showMessage(data.message + ' Mengalihkan ke halaman login...', 'success');
                     form.reset();
+
+                    // TAMBAHAN: Redirect otomatis ke login.html setelah 2 detik
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 } else {
                     showMessage(data.message, 'error');
                 }
