@@ -10,13 +10,22 @@ app.use(express.json());
 
 // Helper koneksi MikroTik via Tunnel.id untuk ambil traffic
 async function getMikrotikTraffic() {
-    if (!process.env.MIKROTIK_HOST) return { mtUsers: [], mtActive: [] };
+    // TAMBAHAN: Mendukung variabel Vercel MIKROTIK_IP & MIKROTIK_HOST sekaligus
+    const host = process.env.MIKROTIK_IP || process.env.MIKROTIK_HOST;
+    const port = process.env.MIKROTIK_API_PORT || process.env.MIKROTIK_PORT || '8728';
+    const user = process.env.MIKROTIK_API_USER || process.env.MIKROTIK_USER;
+    const password = process.env.MIKROTIK_API_PASSWORD || process.env.MIKROTIK_PASSWORD;
+
+    if (!host) {
+        console.error("Host/IP MikroTik tidak ditemukan di Environment Variables");
+        return { mtUsers: [], mtActive: [] };
+    }
 
     const client = new RouterOSClient({
-        host: process.env.MIKROTIK_HOST,
-        port: parseInt(process.env.MIKROTIK_PORT || '8728'),
-        user: process.env.MIKROTIK_USER,
-        password: process.env.MIKROTIK_PASSWORD,
+        host: host,
+        port: parseInt(port),
+        user: user,
+        password: password,
         timeout: 5
     });
 
@@ -50,7 +59,7 @@ app.get('/api/users', async (req, res) => {
                 ...user,
                 bytesIn: mtUser ? parseInt(mtUser['bytes-in'] || 0) : 0,   // Upload
                 bytesOut: mtUser ? parseInt(mtUser['bytes-out'] || 0) : 0, // Download
-                uptime: activeUser ? `${activeUser.uptime} (Online)` : (mtUser ? mtUser.uptime : 'Off')
+                uptime: activeUser ? `${activeUser.uptime} (Online)` : (mtUser ? (mtUser.uptime || 'Off') : 'Off')
             };
         });
 
