@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi Hotspot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #333; font-size: 28px; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        .form-group input {
+            width: 100%; padding: 12px 15px; border: 2px solid #e1e1e1;
+            border-radius: 10px; font-size: 14px; transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .message { padding: 15px; border-radius: 10px; margin-top: 20px; display: none; }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .login-link { text-align: center; margin-top: 20px; color: #666; }
+        .login-link a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .login-link a:hover { text-decoration: underline; }
+        .loading {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white;
+            animation: spin 1s ease-in-out infinite; margin-right: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Registrasi Hotspot</h1>
+            <p>Daftar untuk akses WiFi gratis</p>
+        </div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="name">Nama Lengkap</label>
+                <input type="text" id="name" name="name" required placeholder="Masukkan nama lengkap">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="Masukkan email">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Nomor Telepon</label>
+                <input type="tel" id="phone" name="phone" required placeholder="Masukkan nomor telepon">
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Masukkan username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Masukkan password">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Konfirmasi Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Konfirmasi password">
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">Daftar Sekarang</span>
+            </button>
+        </form>
+
+        <div class="message" id="message"></div>
+
+        <div class="login-link">
+            Sudah punya akun? <a href="login.html">Login di sini</a>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================
+        // GANTI URL DI BAWAH DENGAN DOMAIN VERCEL KAMU JIKA SUDAH DEPLOY
+        // Contoh: 'https://nama-proyek-kamu.vercel.app'
+        // ========================================================
+        const BACKEND_URL = window.location.origin.includes('vercel.app') 
+            ? window.location.origin 
+            : 'https://nama-proyek-kamu.vercel.app'; // <--- Masukkan domain Vercel di sini
+
+        const form = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const message = document.getElementById('message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('Password tidak cocok!', 'error');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                username: document.getElementById('username').value,
+                password: password
+            };
+
+            // Show loading
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Memproses...';
+
+            try {
+                // Menembak langsung ke API Vercel Serverless
+                const response = await fetch(`${BACKEND_URL}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    form.reset();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Terjadi kesalahan koneksi ke server backend.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Daftar Sekarang';
+            }
+        });
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type}`;
+            message.style.display = 'block';
+
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

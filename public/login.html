@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Hotspot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #333; font-size: 28px; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 14px; }
+        .wifi-icon {
+            width: 80px; height: 80px; margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 40px;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        .form-group input {
+            width: 100%; padding: 12px 15px; border: 2px solid #e1e1e1;
+            border-radius: 10px; font-size: 14px; transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .message { padding: 15px; border-radius: 10px; margin-top: 20px; display: none; }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .message.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .register-link { text-align: center; margin-top: 20px; color: #666; }
+        .register-link a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .register-link a:hover { text-decoration: underline; }
+        .loading {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white;
+            animation: spin 1s ease-in-out infinite; margin-right: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-check { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; display: none; }
+        .status-check.show { display: block; }
+        .status-check input { width: 70%; padding: 10px; border: 2px solid #e1e1e1; border-radius: 8px; margin-right: 10px; }
+        .status-check button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .status-result { margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 14px; display: none; }
+        .status-result.approved { background: #d4edda; color: #155724; }
+        .status-result.pending { background: #fff3cd; color: #856404; }
+        .status-result.rejected { background: #f8d7da; color: #721c24; }
+        .status-result.not-found { background: #e2e3e5; color: #383d41; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="wifi-icon">📶</div>
+            <h1>Login Hotspot</h1>
+            <p>Masuk untuk akses WiFi gratis</p>
+        </div>
+
+        <!-- FORM LOGIN BACKEND + HIDDEN MIKROTIK (Agar bisa otomatis kirim ke MikroTik setelah API sukses) -->
+        <form id="loginForm" name="login" action="$(link-login-only)" method="post">
+            <input type="hidden" name="dst" value="$(link-orig)">
+            <input type="hidden" name="popup" value="true">
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="$(username)" required placeholder="Masukkan username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Masukkan password">
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">Login</span>
+            </button>
+        </form>
+
+        <div class="message" id="message"></div>
+
+        <div class="status-check" id="statusCheck">
+            <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Cek status registrasi:</p>
+            <div style="display: flex;">
+                <input type="text" id="checkUsername" placeholder="Username">
+                <button type="button" onclick="checkStatus()">Cek</button>
+            </div>
+            <div class="status-result" id="statusResult"></div>
+        </div>
+
+        <div class="register-link">
+            Belum punya akun? <a href="register.html">Daftar di sini</a>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button type="button" onclick="toggleStatusCheck()" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 14px; text-decoration: underline;">
+                Cek status registrasi
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const message = document.getElementById('message');
+        const statusCheck = document.getElementById('statusCheck');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usernameVal = document.getElementById('username').value;
+            const passwordVal = document.getElementById('password').value;
+
+            const formData = {
+                username: usernameVal,
+                password: passwordVal
+            };
+
+            // Show loading
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Memproses...';
+
+            try {
+                const response = await fetch('http://192.168.11.247:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(`Selamat datang, ${data.user.name}! Login berhasil.`, 'success');
+                    
+                    setTimeout(() => {
+                        showMessage('Anda akan diarahkan ke internet...', 'info');
+                        // Lanjutkan submit form agar MikroTik mengenali sesi aktif user
+                        HTMLFormElement.prototype.submit.call(form);
+                    }, 1500);
+                } else {
+                    showMessage(data.message, 'error');
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Login';
+                }
+            } catch (error) {
+                // Fallback jika backend offline tapi ingin tetap bisa login langsung ke MikroTik
+                showMessage('Backend offline, mencoba langsung login ke MikroTik...', 'info');
+                setTimeout(() => {
+                    HTMLFormElement.prototype.submit.call(form);
+                }, 1000);
+            }
+        });
+
+        function toggleStatusCheck() {
+            statusCheck.classList.toggle('show');
+        }
+
+        async function checkStatus() {
+            const username = document.getElementById('checkUsername').value;
+            const statusResult = document.getElementById('statusResult');
+
+            if (!username) {
+                statusResult.textContent = 'Masukkan username';
+                statusResult.className = 'status-result not-found';
+                statusResult.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://192.168.11.247:3000/api/status/${username}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    statusResult.textContent = `Status: ${data.status.toUpperCase()}`;
+                    statusResult.className = `status-result ${data.status}`;
+                    statusResult.style.display = 'block';
+
+                    if (data.status === 'pending') {
+                        statusResult.textContent += ' - Menunggu approval admin';
+                    } else if (data.status === 'approved') {
+                        statusResult.textContent += ' - Silakan login';
+                    } else if (data.status === 'rejected') {
+                        statusResult.textContent += ' - Registrasi ditolak';
+                    }
+                } else {
+                    statusResult.textContent = data.message;
+                    statusResult.className = 'status-result not-found';
+                    statusResult.style.display = 'block';
+                }
+            } catch (error) {
+                statusResult.textContent = 'Gagal mengecek status (Server backend tidak aktif)';
+                statusResult.className = 'status-result not-found';
+                statusResult.style.display = 'block';
+            }
+        }
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type}`;
+            message.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
