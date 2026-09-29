@@ -213,6 +213,17 @@
             color: #721c24;
         }
 
+        .traffic-info {
+            font-size: 12px;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .traffic-info span {
+            font-weight: 600;
+            color: #2d3436;
+        }
+
         .actions {
             display: flex;
             gap: 10px;
@@ -367,6 +378,7 @@
                             <th>Username</th>
                             <th>Status</th>
                             <th>Tanggal</th>
+                            <th>Penggunaan Traffic</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -399,6 +411,15 @@
 
         let isAdminLoggedIn = false;
         let adminName = 'Admin';
+
+        // Format Byte ke KB, MB, atau GB
+        function formatBytes(bytes) {
+            if (!bytes || bytes == 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
 
         // Check if already logged in
         if (localStorage.getItem('adminLoggedIn') === 'true') {
@@ -489,6 +510,10 @@
                         emptyState.style.display = 'block';
                     } else {
                         users.forEach(user => {
+                            const bytesIn = formatBytes(user.bytesIn || 0);
+                            const bytesOut = formatBytes(user.bytesOut || 0);
+                            const uptime = user.uptime || 'Off';
+
                             const row = document.createElement('tr');
                             row.innerHTML = `
                                 <td>${user.name}</td>
@@ -496,6 +521,12 @@
                                 <td>${user.username}</td>
                                 <td><span class="status ${user.status}">${user.status}</span></td>
                                 <td>${new Date(user.timestamp).toLocaleDateString('id-ID')}</td>
+                                <td>
+                                    <div class="traffic-info">
+                                        ⏱️ Uptime: <span>${uptime}</span><br>
+                                        ⬇️ Download: <span>${bytesOut}</span> | ⬆️ Upload: <span>${bytesIn}</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="actions">
                                         <button class="action-btn approve-btn" 
