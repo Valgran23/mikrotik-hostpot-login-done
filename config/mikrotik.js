@@ -96,6 +96,37 @@ class MikrotikConfig {
   async validateLogin(username, password) {
     return { success: true, message: 'Login valid' };
   }
+
+  // FUNGSI BARU: Ambil statistik akumulasi user & statistik user aktif dari MikroTik
+  async getUsersStats() {
+    const conn = await this.connect();
+    if (!conn) return [];
+
+    try {
+      // Ambil daftar seluruh user hotspot (termasuk total bytes-in/out dan uptime akumulatif)
+      const hotspotUsers = await conn.write('/ip/hotspot/user/print');
+      
+      // Ambil daftar user yang sedang aktif online di hotspot
+      const activeUsers = await conn.write('/ip/hotspot/active/print');
+
+      await conn.close();
+
+      // Gabungkan data agar user aktif mendapatkan statistik live realtime
+      return hotspotUsers.map(user => {
+        const active = activeUsers.find(act => act.user === user.name);
+        return {
+          name: user.name,
+          'bytes-in': active ? active['bytes-in'] : (user['bytes-in'] || 0),
+          'bytes-out': active ? active['bytes-out'] : (user['bytes-out'] || 0),
+          uptime: active ? active.uptime : (user.uptime || 'Off')
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching Mikrotik statistics:', error);
+      try { await conn.close(); } catch (e) {}
+      return [];
+    }
+  }
 }
 
 module.exports = new MikrotikConfig();

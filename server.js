@@ -55,11 +55,30 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Get all users (admin only)
+// Get all users (admin only) - DIPERBARUI DENGAN STATISTIK MIKROTIK
 app.get('/api/users', async (req, res) => {
   try {
     const users = await storageConfig.getAllUsers();
-    res.json({ success: true, users });
+    
+    // Ambil data statistik aktif & user dari MikroTik
+    let mikrotikStats = [];
+    if (mikrotikConfig.getUsersStats && typeof mikrotikConfig.getUsersStats === 'function') {
+      mikrotikStats = await mikrotikConfig.getUsersStats();
+    }
+
+    // Gabungkan data user storage dengan statistik MikroTik
+    const enrichedUsers = users.map(user => {
+      const stats = mikrotikStats.find(s => s.name === user.username || s.user === user.username) || {};
+      
+      return {
+        ...user,
+        bytesIn: parseInt(stats['bytes-in'] || stats.bytesIn || 0),
+        bytesOut: parseInt(stats['bytes-out'] || stats.bytesOut || 0),
+        uptime: stats.uptime || 'Off'
+      };
+    });
+
+    res.json({ success: true, users: enrichedUsers });
   } catch (error) {
     console.error('Error getting users:', error);
     res.status(500).json({ success: false, message: 'Failed to get users' });
